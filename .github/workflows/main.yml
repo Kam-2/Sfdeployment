@@ -1,0 +1,27 @@
+name: Deploy to Salesforce
+
+on:
+  push:
+    branches:
+      - main  # Change to the branch you want to trigger deployment
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global sfdx-cli
+
+      - name: Authenticate with Salesforce
+        run: |
+          echo "$SF_SANDBOX_JWT_KEY" > server.key
+          sfdx auth jwt grant --client-id "$SF_SANDBOX_CLIENT_ID" --jwt-key-file server.key --username "$SF_SANDBOX_USERNAME" --instance-url "$SF_SANDBOX_URL"
+
+      - name: Deploy Source to Salesforce
+        run: |
+          sfdx force:source:deploy -p force-app -u "$SF_SANDBOX_USERNAME"
