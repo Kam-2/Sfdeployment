@@ -19,7 +19,7 @@ jobs:
       - name: Authenticate with Salesforce (JWT)
         run: |
           echo "Storing private key..."
-          echo "${{ secrets.SF_SANDBOX_JWT_KEY }}" > server.key
+          echo "${{ secrets.SF_SANDBOX_JWT_KEY }}"  | base64 --decode > server.key
           ls -la server.key  # Check if key is created
           echo "Authenticating with Salesforce..."
           sfdx auth:jwt:grant \
