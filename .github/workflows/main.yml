@@ -12,26 +12,27 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Verify SFDX Project
-        run: |
-          ls -la
-          if [ ! -f "sfdx-project.json" ]; then
-            echo "Error: Not inside an SFDX project!"
-            exit 1
-          fi
 
       - name: Install Salesforce CLI
         run: npm install --global sfdx-cli
 
-      - name: Authenticate with JWT
+      - name: Authenticate with Salesforce (JWT)
         run: |
-          echo "$SF_SANDBOX_JWT_KEY" > server.key
-          sfdx auth jwt grant --client-id "$SF_SANDBOX_CLIENT_ID" --jwt-key-file server.key --username "$SF_SANDBOX_USERNAME" --instance-url "$SF_SANDBOX_URL"
+          echo "Storing private key..."
+          echo "${{ secrets.SF_SANDBOX_JWT_KEY }}" > server.key
+          ls -la server.key  # Check if key is created
+          echo "Authenticating with Salesforce..."
+          sfdx auth:jwt:grant \
+            --client-id "${{ secrets.SF_SANDBOX_CLIENT_ID }}" \
+            --jwt-key-file server.key \
+            --username "${{ secrets.SF_SANDBOX_USERNAME }}" \
+            --instance-url "${{ secrets.SF_SANDBOX_URL }}" \
+            --set-default-dev-hub \
+            --set-default
+
+      - name: Verify Authentication
+        run: sfdx force:org:list --all
 
       - name: Deploy to Salesforce
         run: |
-          cd $GITHUB_WORKSPACE
-          sfdx force:source:deploy -p force-app -u "$SF_SANDBOX_USERNAME"
+          sfdx force:source:deploy -p force-app/main/default/classes/CaseImageController.cls -u "${{ secrets.SF_SANDBOX_USERNAME }}"
