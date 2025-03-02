@@ -22,12 +22,14 @@ jobs:
       env:
         SF_USERNAME: ${{ secrets.SF_SANDBOX_USERNAME }}
         SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
-        SF_CONSUMER_KEY: ${{ secrets.SF_CONSUMER_KEY }}
-        SF_CONSUMER_SECRET: ${{ secrets.SF_CONSUMER_SECRET }}
-        SF_LOGIN_URL: https://login.salesforce.com  # Use https://test.salesforce.com for sandbox
+        SF_SECURITY_TOKEN: ${{ secrets.SF_SECURITY_TOKEN }}  # Required if IP is not whitelisted
+        SF_LOGIN_URL: https://login.salesforce.com  # Use https://login.salesforce.com for production
       run: |
-        sfdx auth:jwt:grant --clientid $SF_CONSUMER_KEY --jwtkeyfile server.key --username $SF_SANDBOX_USERNAME --instanceurl $SF_LOGIN_URL
+        echo "$SF_PASSWORD$SF_SECURITY_TOKEN" > password.txt
+        sfdx auth:username:password:login --username $SF_USERNAME --password $(cat password.txt) --instanceurl $SF_LOGIN_URL
 
     - name: Deploy to Salesforce
+      env:
+        SF_SANDBOX_USERNAME: ${{ secrets.SF_SANDBOX_USERNAME }}
       run: |
         sfdx force:source:deploy -p force-app/main/default/classes/CaseImagecontroller.cls -u $SF_SANDBOX_USERNAME
