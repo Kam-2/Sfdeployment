@@ -3,36 +3,31 @@ name: Deploy to Salesforce
 on:
   push:
     branches:
-      - main
+      - main  # Trigger the workflow on push to the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Install Salesforce CLI
-        run: npm install --global sfdx-cli
+    - name: Set up Salesforce CLI
+      run: |
+        sudo npm install -g sfdx-cli
+        sfdx --version
 
-      - name: Authenticate with Salesforce (JWT)
-        run: |
-          echo "Storing private key..."
-          echo "${{ secrets.SF_SANDBOX_JWT_KEY }}"  | base64 --decode > server.key
-          ls -la server.key  # Check if key is created
-          echo "Authenticating with Salesforce..."
-          sfdx auth:jwt:grant \
-            --client-id "${{ secrets.SF_SANDBOX_CLIENT_ID }}" \
-            --jwt-key-file server.key \
-            --username "${{ secrets.SF_SANDBOX_USERNAME }}" \
-            --instance-url "${{ secrets.SF_SANDBOX_URL }}" \
-            --set-default-dev-hub \
-            --set-default
+    - name: Authenticate Salesforce Org
+      env:
+        SF_USERNAME: ${{ secrets.SF_SANDBOX_USERNAME }}
+        SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+        SF_CONSUMER_KEY: ${{ secrets.SF_CONSUMER_KEY }}
+        SF_CONSUMER_SECRET: ${{ secrets.SF_CONSUMER_SECRET }}
+        SF_LOGIN_URL: https://login.salesforce.com  # Use https://test.salesforce.com for sandbox
+      run: |
+        sfdx auth:jwt:grant --clientid $SF_CONSUMER_KEY --jwtkeyfile server.key --username $SF_SANDBOX_USERNAME --instanceurl $SF_LOGIN_URL
 
-      - name: Verify Authentication
-        run: sfdx force:org:list --all
-
-      - name: Deploy to Salesforce
-        run: |
-          sfdx force:source:deploy -p force-app/main/default/classes/CaseImageController.cls -u "${{ secrets.SF_SANDBOX_USERNAME }}"
+    - name: Deploy to Salesforce
+      run: |
+        sfdx force:source:deploy -p force-app -u $SF_SANDBOX_USERNAME
